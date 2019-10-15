@@ -117,55 +117,34 @@ def __get_json_val(value):
         if hasattr(value, 'jsonify'):
             return value.jsonify()
         else:
-            return str(value)
+            return jsonify(value)
 
 
-def json_class(rewrite_str_method: bool = False,
-               include_pattern: str = None,
-               include_attrs: List[str] = None,
-               exclude_pattern: str = None,
-               exclude_attrs: List[str] = None):
-    """json修饰器，被该修饰器修饰的类可以被json化。
+def jsonify(obj, **kwargs):
+    # 需要被json化的属性-值
+    json_dict = {}
 
-    使用该修饰器修饰一个类后，该类会多出一个`jsonify()`方法。
+    # 取出属性，使用正则过滤掉那些魔法方法和函数
+    # 同时将那些callable的属性过滤掉（它们是方法，不应该被json化）
+    attr_names = [attr_name for attr_name in dir(obj)
+                  if not re.match('__.+__', attr_name) and
+                  not hasattr(getattr(obj, attr_name), '__call__')]
 
-    方法返回`dict`，表示被调用者被json化的结果。
+    for attr_name in attr_names:
+        if __need_jsonify(attr_name, **kwargs):
+            json_dict[attr_name] = getattr(obj, attr_name)
 
-    通过参数可以控制哪些参数被json化，或者哪些不被json化。
+    return __unfold_json_dict(json_dict)
 
-    可以选择覆盖`__str__`方法，这样在调用`str(obj)`的时候，会
-    将json化之后的字典以`str`的形式返回。
 
-    Args:
-        rewrite_str_method: 是否覆盖`__str__`方法
-        include_pattern: 只有参数名符合该正则才会被json化
-        include_attrs: 只有参数名在该列表中才会被json化
-        exclude_pattern: 参数名符合该正则，不被json化
-        exclude_attrs: 参数名在该列表中，不被json化
-
-    """
+def json_class(rewrite_str_method=False,  **kwargs):
 
     def json_class_decorator(cls: object):
 
-        def jsonify(self):
-            # 需要被json化的属性-值
-            json_dict = {}
+        def __jsonify(self):
+            return jsonify(self, **kwargs)
 
-            # 取出属性，使用正则过滤掉那些魔法方法和函数
-            # 同时将那些callable的属性过滤掉（它们是方法，不应该被json化）
-            attr_names = [attr_name for attr_name in dir(self)
-                          if not re.match('__.+__', attr_name) and
-                          not hasattr(getattr(self, attr_name), '__call__')]
-
-            for attr_name in attr_names:
-                if __need_jsonify(attr_name, include_pattern,
-                                  include_attrs, exclude_pattern,
-                                  exclude_attrs):
-                    json_dict[attr_name] = getattr(self, attr_name)
-
-            return __unfold_json_dict(json_dict)
-
-        cls.jsonify = jsonify
+        cls.jsonify = __jsonify
 
         if rewrite_str_method:
             cls.__str__ = lambda self: str(self.jsonify())
