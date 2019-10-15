@@ -40,4 +40,6 @@ def log_class(template_logger: TemplateLogger):
 
         cls.log_point = log_point
 
+        return cls
+
     return log_class_decorator

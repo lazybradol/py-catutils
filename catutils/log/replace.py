@@ -26,3 +26,27 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+
+import time
+
+
+def __date_fmt_replacement(fmt):
+
+    return time.strftime(fmt, time.localtime())
+
+
+__NAMES__ = ['DATETIME', 'DATE']
+
+__METHODS__ = [lambda: __date_fmt_replacement('%Y-%m-%d %H:%M:%S'),
+               lambda: __date_fmt_replacement('%Y-%m-%d')]
+
+
+def replace(s: str):
+
+    for i, name in enumerate(__NAMES__):
+        name = '%' + name + '%'
+        if name in s:
+            s = s.replace(name, __METHODS__[i]())
+
+    return s
+

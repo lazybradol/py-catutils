@@ -29,6 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from catutils.log.errors import TemplateFormatError, TemplateNotFoundError
 from catutils.log.base import Logger
+from catutils.log.replace import replace
 
 
 class TemplateLogger:
@@ -45,6 +46,8 @@ class TemplateLogger:
             raise AttributeError('template_path should be str or Iterable obj.')
 
         self.templates = {
+            'default_base': '{content}',
+            'default_base_with_datetime': '[%DATETIME%] {content}',
             'default_info': '%DATETIME% [INFO]  {content}',
             'default_warn': '%DATETIME% [WARN]  {content}',
             'default_error': '%DATETIME% [ERROR] {content}'
@@ -59,7 +62,7 @@ class TemplateLogger:
                     words = line.split(':')
                     if len(words) < 2:
                         raise TemplateFormatError('Format error [{}]'.format(line))
-                    self.templates[words[0]] = ''.join(words[1:])
+                    self.templates[words[0]] = ':'.join(words[1:])
 
     def add_log(self,
                 template_id: str,
@@ -71,5 +74,7 @@ class TemplateLogger:
 
         if replaces is not None:
             log = log.format(**replaces)
+
+        log = replace(log)
 
         self.logger.add_log(log)
